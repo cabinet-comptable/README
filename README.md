@@ -1,47 +1,5 @@
 # Facnote
 
-Fork the Facnote repository
---------------------
-go to https://github.com/cabinetcomptable/Facnote.git
-![fork button](https://help.github.com/assets/images/help/repository/fork_button.jpg)
-
-Clone Git repository
---------------------
-```
-#configuration git locale.
-# git config --global user.email "you@example.com"
-# git config --global user.name "Your Name"
-# cd /var/www
-# gti init
-# git remote add upstream https://github.com/cabinetcomptable/Facnote.git
-# git remote add orign https://github.com/[YOUR-GITHUB-USERNAME]/Facnote.git
-# git clone https://github.com/[YOUR-GITHUB-USERNAME]/Facnote.git
-# git checkout develop
-# git fetch
-# gti pull orign develop
-```
-##The .git/config file Exemple
-```
-[core]
-	repositoryformatversion = 0
-	filemode = false
-	bare = false
-	logallrefupdates = true
-[user]
-	email = you@example.com
-[remote "upstream"]
-	url = https://github.com/cabinetcomptable/facnote.git
-	fetch = +refs/heads/*:refs/remotes/upstream/*
-[remote "origin"]
-	url = https://github.com/[YOUR-GITHUB-USERNAME]/facnote.git
-	fetch = +refs/heads/*:refs/remotes/origin/*
-```
-
-Syncing the fork
---------------------
-Sync a fork of a repository to keep it up-to-date with the upstream repository.
-https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork
-
 Requirements
 ------------
 * PHP >= 7.2
@@ -57,11 +15,10 @@ Requirements
     - mod_expires
     ```
      - Varnish 5.1 with varnish-modules
-     - Redis
+
 * Database server (MySQL 5.5+ or MariaDB 10.0+)
 * Composer
 * Curl
-* Git (for development)
 * PHP extensions/modules :
 ```
 - php-common
