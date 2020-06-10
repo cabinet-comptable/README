@@ -26,6 +26,7 @@ Requirements
 - php-fpm
 - php-mysql
 - php-xml
+- php-simplexml
 - php-mbstring
 - php-intl
 - php-curl
