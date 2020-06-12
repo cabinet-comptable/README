@@ -1,0 +1,86 @@
+language: php
+
+#services:
+#  - mysql
+
+sudo: false
+
+cache:
+  directories:
+  - "$HOME/.composer/cache"
+  - "$HOME/.local/bin"
+  - vendor
+  - bin
+
+php:
+  - 7.2
+
+
+#if: (type IN (pull_request)) OR tag IS present
+
+before_install:
+  #- openssl aes-256-cbc -K $encrypted_631a026c2833_key -iv $encrypted_631a026c2833_iv -in deploy_rsa.enc -out ~/.ssh/deploy_rsa -d
+  #- eval "$(ssh-agent -s)"
+  #- chmod 600 ~/.ssh/deploy_rsa
+  #- ssh-add ~/.ssh/deploy_rsa
+  - composer self-update -n -d ${SITE_ROOT}
+  - rm -rf ${SITE_ROOT}/var/cache/*
+
+install:
+  # Public key of the SSH PreProd server
+  - echo '|1|3eXMdWvV58O2O5SLv9Cx6yNper8=|5qjYzBQdX7AnVwnmg9G0zunhsTc= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMV1/rv2ntJzeM2GYSp8tLe/1ExLff4Vw+k3OrFIAk6M8XUiMn37gk8L44eKBZU9oBFUt9qaW4UcbP2ATFyBJQc=' >> $HOME/.ssh/known_hosts
+  # Public key of the SSH Prod server
+  - echo '|1|TxlW5Tzqlqxk+jN2oegV2P9m7EQ=|QB88V0bowShwUoKd0n3OEt1vFuA= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPU1xH9urt/z39GHFa9h/TAXbto0bEabR7KoZNgGOpWmi46stTg8VyD6biJbiFGV6rY1AiulyNxPybOiOOZ9C1A=' >> $HOME/.ssh/known_hosts
+  - travis_retry composer install -n -d  ${SITE_ROOT} --prefer-dist --no-progress --no-suggest --no-interaction --ignore-platform-reqs
+
+stages:
+  - Test
+  - Deploy
+
+jobs:
+  include:
+    - stage: Test
+      if: type IN (push, pull_request)
+      script:
+        - cd ${TRAVIS_BUILD_DIR}/scripts
+        - travis_retry bash ./lint.sh
+        - travis_retry bash ./tests.sh
+      before_script:
+        - export PATH=$PATH:$HOME/.local/bin
+        #  - mysql -e 'create database IF NOT EXISTS facnote_test;' -u root
+        #  - php ${SITE_ROOT}/bin/console doctrine:schema:drop --force --ansi --env=$ENV
+        #  - php ${SITE_ROOT}/app/console doctrine:schema:create --ansi --env=$ENV
+    - stage: Deploy in PreProd
+      if: branch = develop AND type IN (push, api)
+      script: skip     # usually you do not want to rerun any tests
+      deploy:
+        provider: script
+        script: cd ${SITE_ROOT} && chmod -R 775 ../scripts && ../scripts/EurekaPackager/EurekaPackager.sh  -b="${TRAVIS_BRANCH}" --env="preprod"
+        skip_cleanup: true
+        on:
+          branch: develop
+    - stage: Deploy in Prod
+      if: branch =~ ^v[0-9]+(\.[0-9]+){2}$ AND type IN (api)
+      script: skip  # usually you do not want to rerun any tests
+      deploy:
+        provider: script
+        script: cd ${SITE_ROOT} && chmod -R 775 ../scripts && ../scripts/EurekaPackager/EurekaPackager.sh  --env="prod"
+        skip_cleanup: true
+        on:
+          all_branches: true
+          condition: $TRAVIS_BRANCH =~ ^v[0-9]+(\.[0-9]+){2}$
+env:
+  global:
+    - SYMFONY_ENV=test
+    - ENV=test
+    - DIR_ROOT=/var/www
+    - SITE_ROOT=${TRAVIS_BUILD_DIR}/facnote
+    - NFS_DIR=${TRAVIS_BUILD_DIR}/nfs
+    - INTE_HOST=137.74.4.149
+    - INTE_USER=root
+    - COMPOSER_PROCESS_TIMEOUT=900
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always
