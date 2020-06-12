@@ -1,0 +1,100 @@
+parameters:
+  project:
+    name: facnote
+    target_root: .
+
+  delivery:
+    folder:
+      parent: ../scripts/livraisons
+      sources: facnote
+    suffix_format: _`date +'%Y%m%d%H%M'`
+
+environments:
+  list:
+    - preprod
+    - prod
+
+  preprod:
+    name: Preproduction #
+    short: pp #
+    suffix: __PREPROD__ #
+    origin_branch: develop
+    deploy:
+      type:  pkg # src|sources/pkg|package
+      user:  root #
+      host:  137.74.4.149
+      #      pass: ***
+      target: /var/www/ppd.cabinet-expertcomptable.com/releases
+      commands:
+        before_scripts:
+        after_scripts :
+          - export CURRENT_RELEASES_VERSION='release $(date +'%d/%m/%Y %H:%M')'
+          - cd ${environments_preprod_deploy_target} >/dev/null
+          - mkdir release_${NAME} >/dev/null
+          - chown www-data:www-data release_${NAME}
+          - cd release_${NAME}
+          - tar xfz ${environments_preprod_deploy_target}/${ENV^^}_${NAME}.tar.gz
+          - rm -rf  ${environments_preprod_deploy_target}/${ENV^^}_${NAME}.tar.gz
+          - ln -sfn ${environments_preprod_deploy_target}/release_${NAME} ${environments_preprod_deploy_target}/../current
+          - rm -rf ${environments_preprod_deploy_target}/release_${NAME}/var/cache >/dev/null
+          - rm -rf ${environments_preprod_deploy_target}/release_${NAME}/var/sessions >/dev/null
+          - rm -rf ${environments_preprod_deploy_target}/release_${NAME}/var/logs >/dev/null
+          - chown -R root:www-data ${environments_preprod_deploy_target}/../nfs/var/facnote
+          - chmod -R 775 ${environments_preprod_deploy_target}/../nfs/var/facnote
+          - ln -sfn ${environments_preprod_deploy_target}/../nfs/var/facnote/sessions  ${environments_preprod_deploy_target}/release_${NAME}/var/
+          - ln -sfn ${environments_preprod_deploy_target}/../nfs/var/facnote/logs  ${environments_preprod_deploy_target}/release_${NAME}/var/
+          - mkdir ${environments_preprod_deploy_target}/release_${NAME}/var/cache >/dev/null
+          - chown -R www-data:www-data ${environments_preprod_deploy_target}/release_${NAME}/var/cache
+          - chmod -R 775 ${environments_preprod_deploy_target}/../scripts/
+          - chown -R root:www-data ${environments_preprod_deploy_target}/../scripts/
+          - cd ${environments_preprod_deploy_target}/../scripts
+          - ./composer_install.sh
+          - ./assets_install.sh
+          - ./clear_cache.sh
+          - service php7.2-fpm restart
+          - echo "Restart varnish..."
+          - /etc/init.d/varnish restart
+          - ls -td1 ${environments_preprod_deploy_target}/*| tail -n +4|xargs rm -rf # remove old releases
+  prod:
+    name: Production #
+    short: p #
+    suffix: __PROD__ #
+    origin_branch: master
+    symfony:
+      env: prod
+      debug: 0
+    git:
+      token: 15d2dbe2da89fc0cbbace079805ea489bc6bb4d7
+      user: cabinet-comptable
+      releases_url: https://api.github.com/repos/cabinetcomptable/Facnote/releases/latest
+    deploy:
+      type:  pkg # src|sources/pkg|package
+      user:  root #
+      host:  151.80.36.63 #
+      #      pass: ***
+      target: /data/www/cabinet-expertcomptable.com/releases
+      commands:
+        before_scripts:
+        after_scripts:
+          - export CURRENT_RELEASES_VERSION='${TAG_NAME}'
+          - cd ${environments_prod_deploy_target} >/dev/null
+          - tar xfz ${environments_prod_deploy_target}/${ENV^^}_${NAME}.tar.gz
+          - rm -rf  ${environments_prod_deploy_target}/${ENV^^}_${NAME}.tar.gz
+          - ln -sfn ${environments_prod_deploy_target}/${TAG_NAME}_${NAME} ${environments_prod_deploy_target}/../current
+          - rm -rf ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/cache >/dev/null
+          - rm -rf ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/sessions >/dev/null
+          - rm -rf ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/logs >/dev/null
+          - chown -R root:www-data ${environments_prod_deploy_target}/../nfs/var/facnote
+          - chmod -R 775 ${environments_prod_deploy_target}/../nfs/var/facnote
+          - ln -sfn ${environments_prod_deploy_target}/../nfs/var/facnote/sessions  ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/
+          - ln -sfn ${environments_prod_deploy_target}/../nfs/var/facnote/logs  ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/
+          - mkdir ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/cache >/dev/null
+          - chown -R www-data:www-data ${environments_prod_deploy_target}/${TAG_NAME}_${NAME}/var/cache
+          - chmod -R 775 ${environments_prod_deploy_target}/../scripts/
+          - chown -R root:www-data ${environments_prod_deploy_target}/../scripts/
+          - cd ${environments_prod_deploy_target}/../scripts
+          - ./composer_install.sh
+          - ./assets_install.sh
+          - ./clear_cache.sh
+          - ls -td1 ${environments_prod_deploy_target}/*| tail -n +5|xargs rm -rf # remove old releases
+          #- service php7.2-fpm restart
