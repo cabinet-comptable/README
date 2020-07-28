@@ -36,6 +36,7 @@ Requirements
 - php-iconv
 - php-xdebug (for development)
 - php-imagick
+- php-gd
 ```
 System requirements  
 --------------------
